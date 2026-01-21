@@ -41,12 +41,14 @@ jobs:
           fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_title: "Security Scan Report"
-          artifact_name: ""  # Deixando vazio para não usar a API de artefatos bugada da Action
-          report_filename: "/zap/wrk/report.html"  # Caminho completo para o relatório
+          docker_name: ghcr.io/zaproxy/zaproxy:stable
+          allow_issue_writing: true
+          artifact_name: zap_scan_report  # Nome do artefato
+          cmd_options: "-J report_json.json -w report_md.md -r /zap/wrk/report_html.html"  # Gerar os relatórios
 
       - name: Upload ZAP Report Manualmente
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap_scan_report  # Nome simples e válido
-          path: /zap/wrk/report.html  # Garantindo que o caminho correto seja utilizado
+          path: /zap/wrk/report_html.html  # Caminho para o relatório HTML gerado
