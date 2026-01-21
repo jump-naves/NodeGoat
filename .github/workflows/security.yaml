@@ -6,41 +6,57 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+# Permissões necessárias para que o ZAP possa criar issues e fazer upload de artefatos
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   test:
     name: OWASP ZAP SCANS
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Baixa o código do repositório
+      # 1. Checkout do código fonte
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # 2. Constrói a imagem Docker (Node-Goat)
+      # 2. Build dos containers (usando Docker Compose V2)
       - name: Building Docker Node-Goat Image
         run: docker compose build
 
-      # 3. Sobe os containers em background
+      # 3. Inicialização da aplicação
       - name: Launching the app
         run: docker compose up --detach
 
-      # 4. Aguarda a aplicação estar pronta para receber requisições
-      # Isso evita que o ZAP tente escanear um site que ainda está carregando
+      # 4. Verificação de disponibilidade do serviço
       - name: Wait for app to be ready
         run: |
           timeout 60s bash -c 'until curl -s localhost:4000; do sleep 5; done'
-          echo "Aplicação está ativa na porta 4000!"
+          echo "Aplicação disponível na porta 4000"
 
-      # 5. Ajusta as permissões da pasta para o usuário do ZAP (UID 1000)
-      # Resolve o erro [Errno 13] Permission denied
+      # 5. Correção de permissão para escrita do relatório (Essencial para evitar Errno 13)
       - name: Change permissions for ZAP
         run: chmod -R 777 ${{ github.workspace }}
 
-      # 6. Executa o Scan de Baseline do OWASP ZAP
+      # 6. Execução do ZAP Baseline Scan
+      # Usamos v0.13.0 e artifact_name para evitar erro de 'Artifact Container failed'
       - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.13.0
         with:
           target: "http://localhost:4000"
-          fail_action: false # Define como 'true' se quiser que o build falhe ao achar erros
+          fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_title: "Security Scan Report - OWASP ZAP"
+          issue_title: "Security Scan Report"
+          artifact_name: "zap-report" 
+
+      # 7. Upload manual do relatório (Passo de segurança caso a action principal falhe no upload)
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-zap-html-report
+          path: |
+            zap_out.html
+            report.html
