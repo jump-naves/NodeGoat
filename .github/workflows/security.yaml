@@ -34,27 +34,8 @@ jobs:
       - name: Change permissions for ZAP
         run: chmod -R 777 ${{ github.workspace }}
 
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.13.0
-        with:
-          target: "http://localhost:4000"  # A URL da sua aplicação Node-Goat
-          fail_action: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue_title: "Security Scan Report"
-          docker_name: ghcr.io/zaproxy/zaproxy:stable
-          allow_issue_writing: true
-          artifact_name: zap_scan_report  # Nome do artefato
-          cmd_options: "-J /zap/wrk/report_json.json -w /zap/wrk/report_md.md -r /zap/wrk/report_html.html"  # Caminhos completos para os relatórios
-          volumes: |
-            /zap/wrk:/zap/wrk  # Mapeando o diretório de relatórios do container para o host
-
-      - name: Check if report files exist
-        run: |
-          echo "Verificando a existência dos relatórios..."
-          ls -alh /zap/wrk  # Listando os arquivos para verificar a presença do relatório
-
       - name: Run OWASP ZAP Scan
         uses: zaproxy/action-full-scan@v0.10.0
         with:
           target: "http://localhost:4000"
-          allow_issue_writing: false 
+          allow_issue_writing: true 
