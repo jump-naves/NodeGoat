@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
-# Permissões necessárias para que o ZAP possa criar issues e fazer upload de artefatos
 permissions:
   contents: read
   issues: write
@@ -18,30 +17,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout do código fonte
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # 2. Build dos containers (usando Docker Compose V2)
       - name: Building Docker Node-Goat Image
         run: docker compose build
 
-      # 3. Inicialização da aplicação
       - name: Launching the app
         run: docker compose up --detach
 
-      # 4. Verificação de disponibilidade do serviço
       - name: Wait for app to be ready
         run: |
           timeout 60s bash -c 'until curl -s localhost:4000; do sleep 5; done'
           echo "Aplicação disponível na porta 4000"
 
-      # 5. Correção de permissão para escrita do relatório (Essencial para evitar Errno 13)
       - name: Change permissions for ZAP
         run: chmod -R 777 ${{ github.workspace }}
 
-      # 6. Execução do ZAP Baseline Scan
-      # Usamos v0.13.0 e artifact_name para evitar erro de 'Artifact Container failed'
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.13.0
         with:
@@ -49,14 +41,15 @@ jobs:
           fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_title: "Security Scan Report"
-          artifact_name: "zap-report" 
+          # 1. Deixamos vazio para não usar a API de artefatos bugada da Action
+          artifact_name: "" 
+          # 2. Forçamos o nome do arquivo para o passo manual encontrar
+          report_filename: "report.html"
 
-      # 7. Upload manual do relatório (Passo de segurança caso a action principal falhe no upload)
-      - name: Upload ZAP Report
+      - name: Upload ZAP Report Manualmente
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-zap-html-report
-          path: |
-            zap_out.html
-            report.html
+          name: zap-scan-report
+          # 3. Procuramos apenas pelo arquivo que definimos acima
+          path: report.html
