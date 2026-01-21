@@ -41,15 +41,12 @@ jobs:
           fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_title: "Security Scan Report"
-          # 1. Deixamos vazio para não usar a API de artefatos bugada da Action
-          artifact_name: "" 
-          # 2. Forçamos o nome do arquivo para o passo manual encontrar
-          report_filename: "report.html"
+          artifact_name: "" # Deixando vazio para não usar a API de artefatos bugada da Action
+          report_filename: "/zap/wrk/report.html"  # Caminho completo para o relatório
 
       - name: Upload ZAP Report Manualmente
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          # 3. Procuramos apenas pelo arquivo que definimos acima
-          path: report.html
+          path: /zap/wrk/report.html  # Garantindo que o caminho correto seja utilizado
