@@ -45,16 +45,17 @@ jobs:
           allow_issue_writing: true
           artifact_name: zap_scan_report  # Nome do artefato
           cmd_options: "-J /zap/wrk/report_json.json -w /zap/wrk/report_md.md -r /zap/wrk/report_html.html"  # Caminhos completos para os relatórios
+          volumes: |
+            /zap/wrk:/zap/wrk  # Mapeando o diretório de relatórios do container para o host
 
       - name: Check if report files exist
         run: |
           echo "Verificando a existência dos relatórios..."
-          ls -alh /zap/wrk  # Listando o conteúdo da pasta para garantir que os relatórios existam
+          ls -alh /zap/wrk  # Listando os arquivos para verificar a presença do relatório
 
       - name: Upload ZAP Report Manualmente
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap_scan_report  # Nome simples e válido
-          path: /zap/wrk/report_html.html  # Caminho para o relatório HTML gerado
-          if-no-files-found: warn  # Avisar se o arquivo não for encontrado
+          path: /zap/wrk/report_html.html  # Caminho para o relatóri_
